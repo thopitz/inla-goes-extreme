@@ -74,9 +74,6 @@ hyper.pc = list(prec=list(prior="pc.prec",param=c(2,0.01)))
 #write inla model formula
 form=y~-1+intercept+f(station, model = "generic0", Cmatrix=prec, hyper=hyper.pc,constr=TRUE)+f(week,model="rw2",cyclic=TRUE,hyper=list(prec=list(initial=log(1/.01^2),fixed=TRUE)),constr=TRUE)
 
-
-
-#prcp.mat contains the 35 observed sites, but we have to correctly add the 5 prediction sites for INLA
 #NA value indicators in vector form
 is.na=as.vector(is.na(prcp.mat))
 
