@@ -61,8 +61,8 @@ idx.weeks=match(weeks,sort(unique(weeks)))
 
 #define Matérn model with prefixed range ####
 matrange = 50 #fix the Matérn effective range parameter (SPDE parametrization)
-kappa=sqrt(2*nu)/matrange 
 nu=1 #fix the smoothness parameter
+kappa=sqrt(2*nu)/matrange 
 #fix the Matérn correlation matrix for the 40 stations:
 dist=as.matrix(dist(metric))
 cormat=as.matrix(2^(1-nu)*(kappa*dist)^nu*besselK(dist*kappa,nu)/gamma(nu))
