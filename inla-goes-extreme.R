@@ -5,24 +5,24 @@
 #Currently, the generalized Pareto distribution is implemented in the testing version of R-INLA (see www.r-inla.org).
 library(INLA)
 
-#set the working directory containing the data file
+#set the working directory containing the data files
 setwd(".")
 
 #other settings
 nthreads=2 #number of threads (=CPU cores) that INLA may use in parallel
 
-#1) Import data
+#1) Import data ####
 data=read.csv("precip.csv",sep=",",header=TRUE,colClasses=c("numeric","numeric","character","numeric"))
 coord=read.csv("coord.csv",sep=",",header=TRUE,colClasses=c("numeric","numeric","numeric"))
 stat.vec=data[,2] #vector of stations
 prcp.vec=data[,4] #vector of precipitation data
 #get latitude, longitude:
-#(notice: longitude has been shifted by some degrees to "hide" the true station locations)
+#(notice: longitude has been shifted by some degrees to "hide" the true station locations in the EVA challenge)
 lat=coord[,2]
 long=coord[,3]
 lonlat=cbind(long,lat)
 metric=cbind(long*67.7,lat*111.2) #transform (approximately) to Euclidean coordinates
-plot(metric,asp=1,xlab="x (km)",ylab="y (km)",pch=19,cex=.5)
+#plot(metric,asp=1,xlab="x (km)",ylab="y (km)",pch=19,cex=.5)
 
 date.vec=strptime(data[,3],"%m/%d/%Y") #vector of dates (in POSIXlt format)
 date.vec2=as.Date(date.vec) #vector of dates (in Date class)
@@ -48,7 +48,7 @@ prcp.mat[,1]=NA
 #remove some of the objects that we will not need any more
 rm(date.vec,date.vec2)
 
-#2) Construct model components and the regression formula
+#2) Construct model components and the regression formula ####
 
 #for an (approximately) "weekly" effect, we divide the year into 52 blocks:
 days=all.dates$yday+1
@@ -60,15 +60,15 @@ idx.weeks=match(weeks,sort(unique(weeks)))
 
 
 #define Matérn model with prefixed range ####
-matrange = 50 #fix the Matérn effective range parameter (SPDE parametrization)
+matrange = 50 #fix the Matérn effective range parameter
 nu=1 #fix the smoothness parameter
-kappa=sqrt(2*nu)/matrange 
+kappa=sqrt(2*nu)/matrange #SPDE parametrization
 #fix the Matérn correlation matrix for the 40 stations:
 dist=as.matrix(dist(metric))
 cormat=as.matrix(2^(1-nu)*(kappa*dist)^nu*besselK(dist*kappa,nu)/gamma(nu))
 diag(cormat)=1
 prec=solve(cormat) #calculate the corresponding precision matrix
-#use PC prior:
+#use PC prior
 hyper.pc = list(prec=list(prior="pc.prec",param=c(2,0.01)))
 
 #write inla model formula
@@ -81,7 +81,6 @@ is.na=as.vector(is.na(prcp.mat))
 
 #3.1) Gamma model for positive precipitation ####
 
-#(proceed as before to prepare response and data for INLA)
 #positive precipitation vector y.prcp
 y.prcp=as.numeric(prcp.mat)[prcp.mat>0]
 y.prcp=na.omit(y.prcp) #remove NAs
@@ -89,7 +88,6 @@ y.prcp=na.omit(y.prcp) #remove NAs
 is.prcp=as.vector(prcp.mat>0)
 is.prcp[is.na(is.prcp)]=FALSE
 
-#(proceed as before to prepare response and data for INLA)
 #prepare data frame for observed positive precipiation:
 data.inla=data.frame(intercept=1,y=y.prcp,week=weeks[is.prcp&!is.na],idx.week=idx.weeks[is.prcp&!is.na],station=station.id[is.prcp&!is.na])
 #add NA values to response for values to predict (52 weeks times 40 stations) 
@@ -105,9 +103,8 @@ fit=inla(form,
          data=data.inla.pred,
          family="gamma",
          control.family=list(hyper=list(theta=list(prior="loggamma",param=c(2,2),initial=log(1)))),
-         control.predictor=list(compute=F,link=1),
+         control.predictor=list(link=1),
          control.inla=list(strategy="simplified.laplace",int.strategy="ccd"),
-         control.compute=list(return.marginals=T, mlik=T, cpo=T, waic=T,dic=T,hyperpar=T),
          verbose=T,
          num.threads=nthreads
 )
@@ -157,7 +154,7 @@ fit=inla(form,
          data=data.inla.pred,
          family="binomial",
          Ntrials=rep(1,length(y.pexc.pred)),
-         control.predictor=list(compute=TRUE,link=1),
+         control.predictor=list(link=1),
          control.inla=list(strategy="simplified.laplace",int.strategy="ccd"),
          verbose=T,
          num.threads=nthreads
@@ -182,7 +179,7 @@ fit=inla(form,
          data=data.inla.pred,
          family="gp",
          control.family=list(quantile=qprob),
-         control.predictor=list(compute=TRUE,link=1),
+         control.predictor=list(link=1),
          control.inla=list(strategy="simplified.laplace",int.strategy="ccd"),
          verbose=T,
          num.threads=nthreads
