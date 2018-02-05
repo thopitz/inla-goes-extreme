@@ -177,8 +177,8 @@ data.inla.pred=data.frame(intercept=1,y=y.exc.pred,week=week.pred,idx.week=idx.w
 qprob=0.5 #here, we take the median
 fit=inla(form,
          data=data.inla.pred,
-         family="gp",
-         control.family=list(quantile=qprob),
+         family = "gp",
+         control.family = list(control.link = list(quantile = alpha)),
          control.predictor=list(link=1),
          control.inla=list(strategy="simplified.laplace",int.strategy="ccd"),
          verbose=T,
